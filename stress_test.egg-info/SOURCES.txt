@@ -1,0 +1,6 @@
+README.md
+setup.py
+stress_test.egg-info/PKG-INFO
+stress_test.egg-info/SOURCES.txt
+stress_test.egg-info/dependency_links.txt
+stress_test.egg-info/top_level.txt

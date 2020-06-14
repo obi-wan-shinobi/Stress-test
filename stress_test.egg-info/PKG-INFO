@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: stress-test
+Version: 0.0.1
+Summary: A small package to stress test CPU and memory
+Home-page: UNKNOWN
+Author: Shreyas Kalvankar
+Author-email: shreyaskalvankar@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
