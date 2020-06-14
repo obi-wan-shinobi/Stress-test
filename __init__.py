@@ -57,7 +57,7 @@ def cpu_stress():
         global PERCENT
         PERCENT = cpu_percent
     except:
-        msg = "Usage: stress [CPU percent] [exec_time] [Memory percent]"
+        msg = "Usage: stress_test [CPU percent] [exec_time] [Memory in MB]"
         sys.stderr.write(msg)
         sys.exit(1)
     procs = []
