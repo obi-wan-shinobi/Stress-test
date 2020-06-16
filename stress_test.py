@@ -10,6 +10,8 @@ TOTAL_CPU = cpu_count()
 DEFAULT_MEMORY = psutil.virtual_memory().total >> 20
 PERCENT = 100
 OFFSET = 0
+GIGA = 2 ** 30
+MEGA = 2 ** 20
 
 def loop(conn):
     global PERCENT, OFFSET
@@ -17,7 +19,8 @@ def loop(conn):
     conn.send(proc_info)
     conn.close()
     while True:
-        if(psutil.cpu_percent() > PERCENT-OFFSET):
+        if(psutil.cpu_percent() > PERCENT):
+            #time.sleep(5)
             continue
         1*1
 
@@ -51,6 +54,36 @@ def get_args():
 
     return exec_time, proc_num, percent, memory
 
+def pmem():
+    tot, avail, percent, used, free = psutil.virtual_memory()
+    tot, avail, used, free = tot / GIGA, avail / GIGA, used / GIGA, free / GIGA
+    print("---------------------------------------")
+    print("Memory Stats: total = %s GB \navail = %s GB \nused = %s GB \nfree = %s GB \npercent = %s"
+          % (tot, avail, used, free, percent))
+
+def alloc_max_str(memory, exec_time):
+    i = 0
+    a = ''
+    while True:
+        try:
+            a = ' ' * (i * 1024 * MEGA)
+            if((psutil.virtual_memory().used >> 20) > memory):
+                #time.sleep(exec_time)
+                break
+            del a
+        except MemoryError:
+            break
+        i += 1
+    return a
+
+def memory_stress(memory, exec_time):
+    pmem()
+    a = alloc_max_str(memory, exec_time)
+    pmem()
+    print("Memory Filled:")
+    print("Waiting for %d sec"%(exec_time))
+    return a;
+
 def cpu_stress():
     try:
         exec_time, proc_num, cpu_percent, memory = get_args()
@@ -62,8 +95,10 @@ def cpu_stress():
         sys.exit(1)
     procs = []
     conns = []
+    print("CPU and Memory Stress in progress:")
+    a = memory_stress(memory, exec_time)
 
-    for i in range(proc_num):
+    for i in range(proc_num+1):
         parent_conn, child_conn = Pipe()
         p = Process(target=loop, args=(child_conn,))
         p.start()
@@ -78,51 +113,11 @@ def cpu_stress():
 
     time.sleep(exec_time)
 
+    del a
+
     for p in procs:
         p.terminate()
 
-PROCESS = psutil.Process(os.getpid())
-GIGA = 2 ** 30
-MEGA = 2 ** 20
-
-def pmem():
-    tot, avail, percent, used, free = psutil.virtual_memory()
-    tot, avail, used, free = tot / GIGA, avail / GIGA, used / GIGA, free / GIGA
-    print("---------------------------------------")
-    print("Memory Stats: total = %s GB \navail = %s GB \nused = %s GB \nfree = %s GB \npercent = %s"
-          % (tot, avail, used, free, percent))
-
-def alloc_max_str(memory, exec_time):
-    i = 0
-    while True:
-        try:
-            a = ' ' * (i * 200 * MEGA)
-            if((psutil.virtual_memory().used >> 20) > memory):
-                pmem()
-                print("Memory Filled:")
-                print("Waiting for %d sec"%(exec_time))
-                time.sleep(exec_time)
-                break
-            del a
-        except MemoryError:
-            break
-        i += 1
-    max_i = i - 1
-    print('maximum string allocation', max_i)
-
-def memory_stress():
-    try:
-        exec_time, proc_num, cpu_percent, memory = get_args()
-    except:
-        msg = "Usage: stress [CPU percent] [exec_time] [Memory percent]"
-        sys.stderr.write(msg)
-        sys.exit(1)
-
-    pmem()
-    alloc_max_str(memory, exec_time)
-
 if __name__ == "__main__":
-    print("CPU Stress in progress:")
     cpu_stress()
-    print("Memory Stress in progress:")
-    memory_stress()
+    #memory_stress()
