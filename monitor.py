@@ -6,13 +6,10 @@ import time
 
 def plot():
     fig, (ax1, ax2) = plt.subplots(2)
-    ax1.title.set_text("CPU Usage")
-    ax2.title.set_text("Memory Usage")
 
     y1 = []
     y2 = []
     x = []
-    t = time.time()
 
     def animate(i):
         t = time.time()
@@ -23,6 +20,11 @@ def plot():
         ax2.cla()
         ax1.grid()
         ax2.grid()
+        ax1.set_title("CPU Usage")
+        ax2.set_title("Memory Usage")
+        fig.subplots_adjust(hspace=0.4)
+        ax1.set(ylabel="% Usage")
+        ax2.set(ylabel="Memory in GB", xlabel="time")
         ax1.plot(x,y1)
         ax2.plot(x,y2)
         ax1.annotate('%0.2f' % y1[-1], xy=(1, y1[-1]), xytext=(8, 0),

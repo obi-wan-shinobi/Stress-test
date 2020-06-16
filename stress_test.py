@@ -120,4 +120,3 @@ def cpu_stress():
 
 if __name__ == "__main__":
     cpu_stress()
-    #memory_stress()
