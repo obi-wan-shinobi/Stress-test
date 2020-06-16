@@ -66,7 +66,7 @@ def alloc_max_str(memory, exec_time):
     a = ''
     while True:
         try:
-            a = ' ' * (i * 1024 * MEGA)
+            a = ' ' * (i * 256 * MEGA)
             if((psutil.virtual_memory().used >> 20) > memory):
                 #time.sleep(exec_time)
                 break
