@@ -6,22 +6,21 @@ import time
 import psutil
 
 DEFAULT_TIME = 60
-TOTAL_CPU = cpu_count()
+TOTAL_CPU = psutil.cpu_count(logical=True)
 DEFAULT_MEMORY = psutil.virtual_memory().total >> 20
 PERCENT = 100
 OFFSET = 0
 GIGA = 2 ** 30
 MEGA = 2 ** 20
 
-def loop(conn):
-    global PERCENT, OFFSET
-    proc_info = os.getpid()
-    conn.send(proc_info)
+def loop(conn, affinity):
+    proc = psutil.Process()
+    proc_info = proc.pid
+    msg = "Process ID: "+str(proc_info)+" CPU: "+str(affinity)
+    conn.send(msg)
     conn.close()
+    proc.cpu_affinity(affinity)
     while True:
-        if(psutil.cpu_percent() > PERCENT):
-            #time.sleep(5)
-            continue
         1*1
 
 def sigint_handler(signum, frame):
@@ -41,9 +40,13 @@ def get_args():
         raise
     if(len(sys.argv) == 2):
         percent = int(sys.argv[1])
+        if(percent > 100):
+            raise
         proc_num = (percent * TOTAL_CPU)//100
     if(len(sys.argv) == 3):
         percent = int(sys.argv[1])
+        if(percent > 100):
+            raise
         proc_num = (percent * TOTAL_CPU)//100
         exec_time = int(sys.argv[2])
     if(len(sys.argv) == 4):
@@ -51,6 +54,8 @@ def get_args():
         proc_num = (percent * TOTAL_CPU)//100
         exec_time = int(sys.argv[2])
         memory = int(sys.argv[3])
+        if(percent > 100 or memory > DEFAULT_MEMORY):
+            raise
 
     return exec_time, proc_num, percent, memory
 
@@ -92,15 +97,17 @@ def cpu_stress():
     except:
         msg = "Usage: stress_test [CPU percent] [exec_time] [Memory in MB]"
         sys.stderr.write(msg)
+        constraints = "\nCPU < 100 and memory < "+str(DEFAULT_MEMORY)
+        sys.stderr.write(constraints)
         sys.exit(1)
     procs = []
     conns = []
     print("CPU and Memory Stress in progress:")
     a = memory_stress(memory, exec_time)
 
-    for i in range(proc_num+1):
+    for i in range(proc_num):
         parent_conn, child_conn = Pipe()
-        p = Process(target=loop, args=(child_conn,))
+        p = Process(target=loop, args=(child_conn,[i]))
         p.start()
         procs.append(p)
         conns.append(parent_conn)
