@@ -16,11 +16,23 @@ MEGA = 2 ** 20
 def loop(conn, affinity):
     proc = psutil.Process()
     proc_info = proc.pid
-    msg = "Process ID: "+str(proc_info)+" CPU: "+str(affinity)
+    msg = "Process ID: "+str(proc_info)+" CPU: "+str(affinity[0])
     conn.send(msg)
     conn.close()
     proc.cpu_affinity(affinity)
     while True:
+        1*1
+
+def last_core_loop(conn, affinity, percent):
+    proc = psutil.Process()
+    proc_info = proc.pid
+    msg = "Process ID: "+str(proc_info)+" CPU: "+str(affinity[0])
+    conn.send(msg)
+    conn.close()
+    proc.cpu_affinity(affinity)
+    while True:
+        if(psutil.cpu_percent(percpu=True)[affinity[0]] > percent):
+            time.sleep(0.2)
         1*1
 
 def sigint_handler(signum, frame):
@@ -42,16 +54,16 @@ def get_args():
         percent = int(sys.argv[1])
         if(percent > 100):
             raise
-        proc_num = (percent * TOTAL_CPU)//100
+        proc_num = (percent * TOTAL_CPU)/100
     if(len(sys.argv) == 3):
         percent = int(sys.argv[1])
         if(percent > 100):
             raise
-        proc_num = (percent * TOTAL_CPU)//100
+        proc_num = (percent * TOTAL_CPU)/100
         exec_time = int(sys.argv[2])
     if(len(sys.argv) == 4):
         percent = int(sys.argv[1])
-        proc_num = (percent * TOTAL_CPU)//100
+        proc_num = (percent * TOTAL_CPU)/100
         exec_time = int(sys.argv[2])
         memory = int(sys.argv[3])
         if(percent > 100 or memory > DEFAULT_MEMORY):
@@ -105,12 +117,22 @@ def cpu_stress():
     print("CPU and Memory Stress in progress:")
     a = memory_stress(memory, exec_time)
 
+    actual_cores = int(proc_num)
+    last_core_usage = round((proc_num-actual_cores),2)*100
+    proc_num = actual_cores
     for i in range(proc_num):
         parent_conn, child_conn = Pipe()
         p = Process(target=loop, args=(child_conn,[i]))
         p.start()
         procs.append(p)
         conns.append(parent_conn)
+
+    last_core = proc_num
+    parent_conn, child_conn = Pipe()
+    p = Process(target=last_core_loop, args=(child_conn, [last_core], last_core_usage))
+    p.start()
+    procs.append(p)
+    conns.append(parent_conn)
 
     for conn in conns:
         try:
