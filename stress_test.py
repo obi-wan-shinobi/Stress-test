@@ -32,7 +32,7 @@ def last_core_loop(conn, affinity, percent):
     proc.cpu_affinity(affinity)
     while True:
         if(psutil.cpu_percent(percpu=True)[affinity[0]] > percent):
-            time.sleep(0.2)
+            time.sleep(0.05)
         1*1
 
 def sigint_handler(signum, frame):
