@@ -35,6 +35,11 @@ def last_core_loop(conn, affinity, percent):
             time.sleep(0.05)
         1*1
 
+def rest_cores(affinity, exec_time):
+    proc = psutil.Process()
+    proc.cpu_affinity(affinity)
+    time.sleep(exec_time)
+
 def sigint_handler(signum, frame):
     procs = active_children()
     for p in procs:
@@ -133,6 +138,12 @@ def cpu_stress():
     p.start()
     procs.append(p)
     conns.append(parent_conn)
+
+    for i in range(proc_num+1, TOTAL_CPU):
+        parent_conn, child_conn = Pipe()
+        p = Process(target=rest_cores, args=([last_core], exec_time))
+        p.start()
+        procs.append(p)
 
     for conn in conns:
         try:
