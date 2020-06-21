@@ -1,4 +1,4 @@
-from multiprocessing import Process, active_children, cpu_count, Pipe
+from multiprocessing import Process, active_children, Pipe
 import os
 import signal
 import sys
@@ -13,7 +13,7 @@ OFFSET = 0
 GIGA = 2 ** 30
 MEGA = 2 ** 20
 
-def loop(conn, affinity):
+def loop(conn, affinity, check):
     proc = psutil.Process()
     proc_info = proc.pid
     msg = "Process ID: "+str(proc_info)+" CPU: "+str(affinity[0])
@@ -21,6 +21,8 @@ def loop(conn, affinity):
     conn.close()
     proc.cpu_affinity(affinity)
     while True:
+        if(check and psutil.cpu_percent()>PERCENT):
+            time.sleep(0.002)
         1*1
 
 def last_core_loop(conn, affinity, percent):
@@ -32,13 +34,15 @@ def last_core_loop(conn, affinity, percent):
     proc.cpu_affinity(affinity)
     while True:
         if(psutil.cpu_percent(percpu=True)[affinity[0]] > percent):
-            time.sleep(0.05)
+            time.sleep(0.03)
         1*1
 
 def rest_cores(affinity, exec_time):
     proc = psutil.Process()
     proc.cpu_affinity(affinity)
-    time.sleep(exec_time)
+    while True:
+        if(psutil.cpu_percent(percpu=True)[affinity[0]] > 0):
+            time.sleep(exec_time)
 
 def sigint_handler(signum, frame):
     procs = active_children()
@@ -125,25 +129,32 @@ def cpu_stress():
     actual_cores = int(proc_num)
     last_core_usage = round((proc_num-actual_cores),2)*100
     proc_num = actual_cores
-    for i in range(proc_num):
+    for i in range(proc_num-1):
         parent_conn, child_conn = Pipe()
-        p = Process(target=loop, args=(child_conn,[i]))
+        p = Process(target=loop, args=(child_conn,[i], False))
         p.start()
         procs.append(p)
         conns.append(parent_conn)
 
-    last_core = proc_num
     parent_conn, child_conn = Pipe()
-    p = Process(target=last_core_loop, args=(child_conn, [last_core], last_core_usage))
+    p = Process(target=loop, args=(child_conn,[proc_num-1], True))
     p.start()
     procs.append(p)
     conns.append(parent_conn)
 
-    for i in range(proc_num+1, TOTAL_CPU):
+    if(proc_num!=TOTAL_CPU):
+        last_core = proc_num
         parent_conn, child_conn = Pipe()
-        p = Process(target=rest_cores, args=([last_core], exec_time))
+        p = Process(target=last_core_loop, args=(child_conn, [last_core], last_core_usage))
         p.start()
         procs.append(p)
+        conns.append(parent_conn)
+
+        for i in range(proc_num+1, TOTAL_CPU):
+            parent_conn, child_conn = Pipe()
+            p = Process(target=rest_cores, args=([i], exec_time))
+            p.start()
+            procs.append(p)
 
     for conn in conns:
         try:
