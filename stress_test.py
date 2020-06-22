@@ -7,7 +7,7 @@ import psutil
 
 DEFAULT_TIME = 60
 TOTAL_CPU = psutil.cpu_count(logical=True)
-DEFAULT_MEMORY = psutil.virtual_memory().total >> 20
+DEFAULT_MEMORY = (psutil.virtual_memory().total >> 30)*1000
 PERCENT = 100
 OFFSET = 0
 GIGA = 2 ** 30
@@ -22,7 +22,7 @@ def loop(conn, affinity, check):
     proc.cpu_affinity(affinity)
     while True:
         if(check and psutil.cpu_percent()>PERCENT):
-            time.sleep(0.002)
+            time.sleep(0.003)
         1*1
 
 def last_core_loop(conn, affinity, percent):
@@ -34,7 +34,7 @@ def last_core_loop(conn, affinity, percent):
     proc.cpu_affinity(affinity)
     while True:
         if(psutil.cpu_percent(percpu=True)[affinity[0]] > percent):
-            time.sleep(0.03)
+            time.sleep(0.035)
         1*1
 
 def rest_cores(affinity, exec_time):
@@ -126,6 +126,7 @@ def cpu_stress():
     print("CPU and Memory Stress in progress:")
     a = memory_stress(memory, exec_time)
 
+    print("Stressing %f cores:"%(proc_num))
     actual_cores = int(proc_num)
     last_core_usage = round((proc_num-actual_cores),2)*100
     proc_num = actual_cores
