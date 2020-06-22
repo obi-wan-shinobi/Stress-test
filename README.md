@@ -175,7 +175,7 @@ for i in range(proc_num-1):
         conns.append(parent_conn)
 ```
 
-This creates child processes which will be executing the method `loop()` parallelly. 
+This creates child processes which will be executing the method `loop()` parallelly. The `Process()` method from the `multiprocessing` module enables creation of child processes with `Pipe()` and `Queue()` objects. The `Pipe()` will ensure a communication between the parent and child process for getting the `PID` and the `core affinity` of that particular process in form of a message. The process is targetted to run `loop()` method:
 ```
 def loop(conn, affinity, check):
     '''
