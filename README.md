@@ -175,7 +175,7 @@ for i in range(proc_num-1):
         conns.append(parent_conn)
 ```
 
-This creates child processes who will be executing the method `loop()` parallelly. 
+This creates child processes which will be executing the method `loop()` parallelly. 
 ```
 def loop(conn, affinity, check):
     '''
@@ -197,3 +197,48 @@ def loop(conn, affinity, check):
             time.sleep(0.01)
         1*1
 ```
+The `cpu_affinity()` assigns a core affinity to a process. The result is that the process runs on the cores specified in the `affinity` list. Currently, we pass one core for every process. This disables sharing of cores and will allow us to control the average usage across all cores. The process executes a simple computation of `1*1` infinitely. If the `check` parameter is true, the core will balance the percentage the core runs at by delaying the calculation with `10ms` and restart the loop according to the total CPU percentage for calibration. For e.g. if the total CPU percentage goes above the desired CPU percentage, the core will reduce its usage to balance the load. We use one of the cores which was supposed to run at `100%` for this task using this snippet:
+```
+parent_conn, child_conn = Pipe()
+    p = Process(target=loop, args=(child_conn,[proc_num-1], True))
+    p.start()
+    procs.append(p)
+    conns.append(parent_conn)
+```
+We pass the third argument as `True` for this core which is the value for `check` parameter. 
+
+Lastly, this snippet is used for fractional load:
+```
+if(proc_num!=TOTAL_CPU):
+        last_core = proc_num
+        parent_conn, child_conn = Pipe()
+        p = Process(target=last_core_loop, args=(child_conn, [last_core], last_core_usage))
+        p.start()
+        procs.append(p)
+        conns.append(parent_conn)
+```
+
+The method `last_core_loop()` allows execution of a core at a specified percentage by conditionally delaying the exection of loop statements. 
+```
+def last_core_loop(conn, affinity, percent):
+    '''
+    Function to stress the last core at fractional percentage.
+    e.g. core 5 at 45% Usage
+
+    Arguments:
+        conn    : child connection which is an object of Pipe()
+        affinity: list of cores to assign affinity for the process
+        percent   : fractional percentage to run the core at
+    '''
+    proc = psutil.Process()
+    proc_info = proc.pid
+    msg = "Process ID: "+str(proc_info)+" CPU: "+str(affinity[0])
+    conn.send(msg)
+    conn.close()
+    proc.cpu_affinity(affinity)
+    while True:
+        if(psutil.cpu_percent(percpu=True)[affinity[0]] > percent):
+            time.sleep(0.04)
+        1*1
+```
+Here, the usage of the particular core is monitored and if the usage rises above the `percent` value, the loop is delayed by `40ms`. These values are arbitrary and can be fine-tuned for accurate results. For e.g. if the total percentage entered by the user equals to a consumption of `3.6` cores, 3 cores will be running at `100%` and the 4th core will run at `60%`. 
