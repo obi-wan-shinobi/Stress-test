@@ -110,7 +110,8 @@ def get_args():
 ```
 The following `try-except` block in the `_main()` takes care of raised exceptions:
 ```
-try:
+def _main():
+    try:
         exec_time, proc_num, cpu_percent, memory = get_args()
         global PERCENT
         PERCENT = cpu_percent
@@ -121,6 +122,7 @@ try:
         sys.stderr.write(constraints)
         sys.exit(1)
 ```
+
 
 ## Memory Stress:
 
@@ -152,6 +154,46 @@ def alloc_max_str(memory):
 
 `a` is an empty string which is initialized and then a `while` block is initiated. The `try` and `except` block is put in place incase the program runs out of memory. `a = ' ' * (i * 256 * MEGA)` creates a string of size 256 MB in multiples of `i`. With each iteration, `i` will increase and the subsequent string variable will be in multiples of `256`. The size of the current used memory is compared with the requested memory using `(psutil.virtual_memory().used >> 20) > memory` and if the string assigned is of the requested size, the loop breaks and returns the string to the calling method. If the loop iterates, it deletes the previously created object and assigns a new string variable (`del a`). 
 
+
 ## CPU Stress:
 
 The CPU is stressed by creating multiple processes and connecting each processes in a Parent-child pipe for a two way communication. The number of processes to be created depends on the number of processors that are calculated according to user percentage. 
+```
+    actual_cores = int(proc_num)
+    last_core_usage = round((proc_num-actual_cores),2)*100
+    proc_num = actual_cores
+```
+This piece of code block splits the number of cores (currently fractional) into an integer and a floating point value of the remainder core. (e.g. if the CPU usage entered corresponds to 3.6 cores,  `actual_cores` will be `3` and `last_core_usage` will be `60%`.
+
+A process is created for each core along with a `Pipe()` for communication between parent and child.
+```
+for i in range(proc_num-1):
+        parent_conn, child_conn = Pipe()
+        p = Process(target=loop, args=(child_conn,[i], False))
+        p.start()
+        procs.append(p)
+        conns.append(parent_conn)
+```
+
+This creates child processes who will be executing the method `loop()` parallelly. 
+```
+def loop(conn, affinity, check):
+    '''
+    Function to stress cores to run at 100%
+
+    Arguments:
+        conn    : child connection which is an object of Pipe()
+        affinity: list of cores to assign affinity for the process
+        check   : conditional flag to enable real time calibration
+    '''
+    proc = psutil.Process()
+    proc_info = proc.pid
+    msg = "Process ID: "+str(proc_info)+" CPU: "+str(affinity[0])
+    conn.send(msg)
+    conn.close()
+    proc.cpu_affinity(affinity)
+    while True:
+        if(check and psutil.cpu_percent()>PERCENT):
+            time.sleep(0.01)
+        1*1
+```
