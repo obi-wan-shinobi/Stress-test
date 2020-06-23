@@ -194,7 +194,7 @@ def loop(conn, affinity, check):
     proc.cpu_affinity(affinity)
     while True:
         if(check and psutil.cpu_percent()>PERCENT):
-            time.sleep(0.01)
+            time.sleep(0.01)            #change to fine tune
         1*1
 ```
 The `cpu_affinity()` assigns a core affinity to a process. The result is that the process runs on the cores specified in the `affinity` list. Currently, we pass one core for every process. This disables sharing of cores and will allow us to control the average usage across all cores. The process executes a simple computation of `1*1` infinitely. If the `check` parameter is true, the core will balance the percentage the core runs at by delaying the calculation with `10ms` and restart the loop according to the total CPU percentage for calibration. For e.g. if the total CPU percentage goes above the desired CPU percentage, the core will reduce its usage to balance the load. We use one of the cores which was supposed to run at `100%` for this task using this snippet:
@@ -238,7 +238,7 @@ def last_core_loop(conn, affinity, percent):
     proc.cpu_affinity(affinity)
     while True:
         if(psutil.cpu_percent(percpu=True)[affinity[0]] > percent):
-            time.sleep(0.04)
+            time.sleep(0.04)          #change to fine tune
         1*1
 ```
 Here, the usage of the particular core is monitored and if the usage rises above the `percent` value, the loop is delayed by `40ms`. These values are arbitrary and can be fine-tuned for accurate results. For e.g. if the total percentage entered by the user equals to a consumption of `3.6` cores, 3 cores will be running at `100%` and the 4th core will run at `60%`. 
