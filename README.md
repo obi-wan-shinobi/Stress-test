@@ -242,3 +242,9 @@ def last_core_loop(conn, affinity, percent):
         1*1
 ```
 Here, the usage of the particular core is monitored and if the usage rises above the `percent` value, the loop is delayed by `40ms`. These values are arbitrary and can be fine-tuned for accurate results. For e.g. if the total percentage entered by the user equals to a consumption of `3.6` cores, 3 cores will be running at `100%` and the 4th core will run at `60%`. 
+
+# Future prospects:
+
+Currently, only a single core is engaged for recalibration according to CPU usage. Meaning, if we want to use 50% of the CPU on a 12 core machine, we're running 5 cores at 100% and the 6th core is balancing itself by reducing usage while monitoring the complete CPU usage. This is done by simply delaying the core execution by 10ms. This approach is not accurate. Furthermore, only one CPU core is engaged for auto balancing the load as opposed to all others in order to avoid undershooting. Implementation of a sophisticated PID algorithm may help reduce error and keep the CPU at a constant load while minimizing the error. 
+
+Another odd behaviour that is encountered on my system is when I plug in the laptop to charge. The CPU usage overshoots and doesn't always come down. But this overshooting is only seen in the Task Manager and the `monitor.py` shows the desired results.
