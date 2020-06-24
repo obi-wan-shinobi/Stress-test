@@ -32,7 +32,7 @@ def loop(conn, affinity, check):
         Conditional check for calibration
         '''
         if(check and psutil.cpu_percent()>PERCENT):
-            time.sleep(0.01)
+            time.sleep(0.05)            #Change the time for finetuning
         1*1
 
 def last_core_loop(conn, affinity, percent):
@@ -56,7 +56,7 @@ def last_core_loop(conn, affinity, percent):
         Conditional check for core calibration
         '''
         if(psutil.cpu_percent(percpu=True)[affinity[0]] > percent):
-            time.sleep(0.04)
+            time.sleep(0.1)            #Change the time for finetuning
         1*1
 
 def sigint_handler(signum, frame):
