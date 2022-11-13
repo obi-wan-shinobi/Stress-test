@@ -114,7 +114,7 @@ def pmem():
     '''
     Function to display memory statistics
     '''
-    tot, avail, percent, used, free = psutil.virtual_memory()
+    tot, avail, percent, used, free = psutil.virtual_memory()[:5]
     tot, avail, used, free = tot / GIGA, avail / GIGA, used / GIGA, free / GIGA
     print("---------------------------------------")
     print("Memory Stats: total = %s GB \navail = %s GB \nused = %s GB \nfree = %s GB \npercent = %s"
